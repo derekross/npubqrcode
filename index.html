@@ -26,6 +26,11 @@
         input {
             background-color: #073642; /* Darker background for input */
             color: #ffffff; /* White text for input */
+            text-align: center; /* Center text and placeholder */
+        }
+        input::placeholder {
+            color: #cccccc; /* Light grey placeholder text */
+            text-align: center; /* Center placeholder text */
         }
         button {
             background-color: #586e75; /* Slightly lighter background for buttons */
@@ -52,8 +57,8 @@
     </style>
 </head>
 <body>
-    <h1>Nostr Public Key to QR Code</h1>
-    <input type="text" id="npubInput" placeholder="Enter your npub public key" size="50">
+    <center><h1>Nostr Public Key QR Code Generator</h1></center>
+    <input type="text" id="npubInput" placeholder="Enter your public key: npub123..." size="50">
     <button onclick="generateQRCode()">Generate QR Code</button>
     <button onclick="getNIP07PublicKey()">Get from NIP-07 Extension</button>
     <div id="qrcode-container">
