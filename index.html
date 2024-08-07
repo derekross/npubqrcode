@@ -35,20 +35,18 @@
         button:hover {
             background-color: #657b83; /* Even lighter background on hover */
         }
-        #qrcode {
-            margin-top: 40px; /* Increased margin-top for extra space */
+        #qrcode-container {
+            position: relative;
             width: 200px; /* Set a fixed size for the QR code container */
             height: 200px;
+            margin-top: 20px; /* Increased margin-top for extra space */
         }
-        .qrcode-container {
+        #qrcode {
             width: 100%;
             height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
         }
         #downloadBtn {
-            margin-top: 50px; /* Increased margin-top to move the button further down */
+            margin-top: 30px; /* Updated margin-top for the button */
             display: none;
         }
     </style>
@@ -58,12 +56,12 @@
     <input type="text" id="npubInput" placeholder="Enter your npub public key" size="50">
     <button onclick="generateQRCode()">Generate QR Code</button>
     <button onclick="getNIP07PublicKey()">Get from NIP-07 Extension</button>
-    <div id="qrcode" class="qrcode-container"></div>
+    <div id="qrcode-container">
+        <canvas id="qrcode"></canvas>
+    </div>
     <button id="downloadBtn" onclick="downloadQRCode()">Download QR Code</button>
 
     <script>
-        let qrCode;
-
         function generateQRCode() {
             const npubKey = document.getElementById('npubInput').value.trim();
             if (npubKey) {
@@ -71,14 +69,42 @@
                     try {
                         const nostrURI = `nostr:${npubKey}`;
                         console.log('Generating QR Code for:', nostrURI);
-                        document.getElementById('qrcode').innerHTML = '';
-                        qrCode = new QRCode(document.getElementById('qrcode'), {
+                        
+                        // Create QR code with qrcode.min.js
+                        const qrCode = new QRCode(document.createElement('div'), {
                             text: nostrURI,
-                            colorDark : "#A020F0", // Purple color for QR code
-                            colorLight : "#002b36", // Midnight background for QR code
-                            correctLevel : QRCode.CorrectLevel.H
+                            colorDark: "#A020F0", // Purple color for QR code
+                            colorLight: "#002b36", // Midnight background for QR code
+                            correctLevel: QRCode.CorrectLevel.H
                         });
-                        document.getElementById('downloadBtn').style.display = 'block'; // Show download button
+                        
+                        // Get the QR code as a canvas
+                        const canvas = qrCode._el.querySelector('canvas');
+                        if (canvas) {
+                            const context = canvas.getContext('2d');
+                            const qrCodeCanvas = document.getElementById('qrcode');
+                            const qrCodeCtx = qrCodeCanvas.getContext('2d');
+                            qrCodeCanvas.width = canvas.width;
+                            qrCodeCanvas.height = canvas.height;
+
+                            // Draw QR code on the canvas
+                            qrCodeCtx.drawImage(canvas, 0, 0);
+
+                            // Overlay the image in the center of the QR code
+                            const img = new Image();
+                            img.src = 'nostrich-head.png'; // Path to the updated image
+                            img.onload = () => {
+                                const size = 64; // Size of the updated image
+                                const margin = 40; // Margin to ensure readability
+                                const x = (qrCodeCanvas.width - size) / 2;
+                                const y = (qrCodeCanvas.height - size) / 2;
+                                qrCodeCtx.drawImage(img, x, y, size, size);
+                                
+                                document.getElementById('downloadBtn').style.display = 'block'; // Show download button
+                            };
+                        } else {
+                            alert('Failed to generate QR code.');
+                        }
                     } catch (error) {
                         console.error('Error generating QR code:', error);
                         alert('Failed to generate QR code.');
@@ -145,7 +171,7 @@
         }
 
         function downloadQRCode() {
-            const canvas = document.querySelector('#qrcode canvas');
+            const canvas = document.getElementById('qrcode');
             if (canvas) {
                 const image = canvas.toDataURL('image/png');
                 const link = document.createElement('a');
