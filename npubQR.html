@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nostr Public Key to QR Code</title>
+    <script src="qrcode.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #001f2e; /* Slightly darker midnight background */
+            color: #ffffff; /* White text */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        input, button {
+            margin: 10px;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+        }
+        input {
+            background-color: #073642; /* Darker background for input */
+            color: #ffffff; /* White text for input */
+        }
+        button {
+            background-color: #586e75; /* Slightly lighter background for buttons */
+            color: #ffffff; /* White text for buttons */
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #657b83; /* Even lighter background on hover */
+        }
+        #qrcode {
+            margin-top: 40px; /* Increased margin-top for extra space */
+            width: 200px; /* Set a fixed size for the QR code container */
+            height: 200px;
+        }
+        .qrcode-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #downloadBtn {
+            margin-top: 50px; /* Increased margin-top to move the button further down */
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Nostr Public Key to QR Code</h1>
+    <input type="text" id="npubInput" placeholder="Enter your npub public key" size="50">
+    <button onclick="generateQRCode()">Generate QR Code</button>
+    <button onclick="getNIP07PublicKey()">Get from NIP-07 Extension</button>
+    <div id="qrcode" class="qrcode-container"></div>
+    <button id="downloadBtn" onclick="downloadQRCode()">Download QR Code</button>
+
+    <script>
+        let qrCode;
+
+        function generateQRCode() {
+            const npubKey = document.getElementById('npubInput').value.trim();
+            if (npubKey) {
+                if (isValidNpub(npubKey)) {
+                    try {
+                        const nostrURI = `nostr:${npubKey}`;
+                        console.log('Generating QR Code for:', nostrURI);
+                        document.getElementById('qrcode').innerHTML = '';
+                        qrCode = new QRCode(document.getElementById('qrcode'), {
+                            text: nostrURI,
+                            colorDark : "#A020F0", // Purple color for QR code
+                            colorLight : "#002b36", // Midnight background for QR code
+                            correctLevel : QRCode.CorrectLevel.H
+                        });
+                        document.getElementById('downloadBtn').style.display = 'block'; // Show download button
+                    } catch (error) {
+                        console.error('Error generating QR code:', error);
+                        alert('Failed to generate QR code.');
+                    }
+                } else {
+                    alert('Invalid npub public key format.');
+                }
+            } else {
+                alert('Please enter a valid npub public key.');
+            }
+        }
+
+        async function getNIP07PublicKey() {
+            if (window.nostr && window.nostr.getPublicKey) {
+                try {
+                    console.log('Calling getPublicKey from NIP-07 extension');
+                    const publicKeyHex = await window.nostr.getPublicKey();
+                    
+                    if (publicKeyHex === null || publicKeyHex === undefined) {
+                        throw new Error('getPublicKey returned null or undefined');
+                    }
+
+                    console.log('Public Key fetched from NIP-07:', publicKeyHex);
+
+                    if (typeof publicKeyHex === 'string') {
+                        if (publicKeyHex.trim() === '') {
+                            throw new Error('Public Key is an empty string');
+                        }
+
+                        if (isValidHex(publicKeyHex)) {
+                            console.log('Valid hex public key:', publicKeyHex);
+                            
+                            const publicKeyNpub = hexToNpub(publicKeyHex);
+                            console.log('Converted Public Key (npub):', publicKeyNpub);
+                
+                            document.getElementById('npubInput').value = publicKeyNpub;
+                            generateQRCode();
+                        } else {
+                            throw new Error('Invalid hex format for public key');
+                        }
+                    } else {
+                        throw new Error('Public Key is not a valid string');
+                    }
+                } catch (error) {
+                    console.error('Error getting public key from NIP-07 extension:', error.message);
+                    console.error('Full Error Details:', error);
+                    alert('Failed to get public key from NIP-07 extension.');
+                }
+            } else {
+                alert('NIP-07 extension is not installed or not accessible.');
+            }
+        }
+
+        function isValidHex(hex) {
+            return /^[0-9a-fA-F]{64}$/.test(hex);  // Assuming the hex key is 64 characters long
+        }
+
+        function isValidNpub(npub) {
+            return npub.startsWith('npub') && npub.length > 10;  // Example validation
+        }
+
+        function hexToNpub(hex) {
+            return `npub${hex}`; // Replace with actual conversion logic if necessary
+        }
+
+        function downloadQRCode() {
+            const canvas = document.querySelector('#qrcode canvas');
+            if (canvas) {
+                const image = canvas.toDataURL('image/png');
+                const link = document.createElement('a');
+                link.href = image;
+                link.download = 'qr-code.png';
+                link.click();
+            } else {
+                alert('QR code not generated yet.');
+            }
+        }
+    </script>
+</body>
+</html>
